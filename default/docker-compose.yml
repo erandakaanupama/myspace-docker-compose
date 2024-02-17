@@ -11,8 +11,10 @@ services:
       timeout: 5s
       retries: 10
       start_period: 5s
-    networks:
-      - myspace
+    extends:
+      file: common-config.yml
+      service: network-deploy-service
+
   configserver:
     image: "eabandara/myspace-configserver:0.0.1"
     container_name: myspace-configserver-ms
@@ -27,30 +29,21 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    deploy:
-      resources:
-        limits:
-          memory: 700m
-    networks:
-      - myspace
-  accounts:
+    extends:
+      file: common-config.yml
+      service: microservice-base-config
+
+  products:
     image: "eabandara/myspace-products:0.0.2"
     container_name: myspace-products-ms
     ports:
       - "8081:8081"
-    depends_on:
-      configserver:
-        condition: service_completed_successfully
-    deploy:
-      resources:
-        limits:
-          memory: 700m
-    networks:
-      - myspace
     environment:
       SPRING_APPLICATION_NAME: "products"
-      SPRING_CONFIG_IMPORT: "configserver:http://configserver:8071/"
-      SPRING_PROFILES_ACTIVE: default
+    extends:
+      file: common-config.yml
+      service: microservice-configserver-config
+
 networks:
   myspace:
     driver: "bridge"
