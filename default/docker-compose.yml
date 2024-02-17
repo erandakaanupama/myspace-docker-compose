@@ -1,0 +1,56 @@
+services:
+  rabbit:
+    image: rabbitmq:3.12-management
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - myspace
+  configserver:
+    image: "eabandara/myspace-configserver:0.0.1"
+    container_name: myspace-configserver-ms
+    ports:
+      - "8071:8071"
+    depends_on:
+      rabbit:
+        condition: service_completed_successfully
+    healthcheck:
+      test: "curl --fail --silent localhost:8071/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 700m
+    networks:
+      - myspace
+  accounts:
+    image: "eabandara/myspace-products:0.0.2"
+    container_name: myspace-products-ms
+    ports:
+      - "8081:8081"
+    depends_on:
+      configserver:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 700m
+    networks:
+      - myspace
+    environment:
+      SPRING_APPLICATION_NAME: "products"
+      SPRING_CONFIG_IMPORT: "configserver:http://configserver:8071/"
+      SPRING_PROFILES_ACTIVE: default
+networks:
+  myspace:
+    driver: "bridge"
