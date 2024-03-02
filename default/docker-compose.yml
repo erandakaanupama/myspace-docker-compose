@@ -1,4 +1,15 @@
 services:
+  myspaceproductdb:
+    image: mysql
+    container_name: myspaceproductdb
+    ports:
+      - 3307:3306
+    environment:
+      MYSQL_DATABASE: myspaceproduct
+    extends:
+      file: common-config.yml
+      service: microservice-db-config
+
   rabbit:
     image: rabbitmq:3.12-management
     hostname: rabbitmq
@@ -16,7 +27,7 @@ services:
       service: network-deploy-service
 
   configserver:
-    image: "eabandara/myspace-configserver:0.2.0"
+    image: "eabandara/myspace-configserver:0.3.0"
     container_name: myspace-configserver-ms
     ports:
       - "8071:8071"
@@ -34,12 +45,16 @@ services:
       service: microservice-base-config
 
   products:
-    image: "eabandara/myspace-products:0.2.0"
+    image: "eabandara/myspace-products:0.3.0"
     container_name: myspace-products-ms
     ports:
       - "8081:8081"
     environment:
       SPRING_APPLICATION_NAME: "products"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://myspaceproductdb:3306/myspaceproduct"
+    depends_on:
+      myspaceproductdb:
+        condition: service_healthy
     extends:
       file: common-config.yml
       service: microservice-configserver-config
